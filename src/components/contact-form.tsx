@@ -1,173 +1,314 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
+import { useActionState, useMemo, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { saveContact, type SaveContactState } from "@/app/actions";
-import { CONTACT_CATEGORIES } from "@/lib/contact-categories";
+import {
+  CONTACT_CATEGORIES,
+  type ContactCategory,
+} from "@/lib/contact-categories";
 
 const initialState: SaveContactState = {
   status: "idle",
   message: "",
 };
 
-function SubmitButton() {
+const MAX_FIELD_LENGTH = 250;
+const MAX_COMMENT_LENGTH = 1000;
+
+type ContactValues = {
+  name: string;
+  organization: string;
+  category: ContactCategory;
+  phoneNumber: string;
+  designation: string;
+  address: string;
+  comments: string;
+};
+
+const initialValues: ContactValues = {
+  name: "",
+  organization: "",
+  category: "Others",
+  phoneNumber: "",
+  designation: "",
+  address: "",
+  comments: "",
+};
+
+function isValidPhoneNumber(phoneNumber: string) {
+  return /^[+\d][\d().\-\s]{5,20}$/.test(phoneNumber.trim());
+}
+
+function SaveButton() {
   const { pending } = useFormStatus();
 
   return (
     <button
       type="submit"
       disabled={pending}
-      className="w-full rounded-xl bg-[var(--brand-strong)] px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[var(--brand)] disabled:cursor-not-allowed disabled:opacity-70 sm:w-auto"
+      className="rounded-xl bg-[var(--brand-strong)] px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[var(--brand)] disabled:cursor-not-allowed disabled:opacity-70"
     >
       {pending ? "Saving..." : "Save Contact"}
     </button>
   );
 }
 
-type ContactFieldProps = {
-  id: string;
-  label: string;
-  placeholder: string;
-  required?: boolean;
-  textarea?: boolean;
-  type?: "text" | "tel";
-  autoComplete?: string;
-  maxLength?: number;
-};
-
-function ContactField({
-  id,
-  label,
-  placeholder,
-  required = false,
-  textarea = false,
-  type = "text",
-  autoComplete = "off",
-  maxLength = 250,
-}: ContactFieldProps) {
-  const baseClassName =
-    "w-full rounded-xl border border-[var(--line)] bg-white/85 px-4 py-3 text-sm text-[var(--ink)] outline-none transition focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand-soft)]";
-
-  return (
-    <label className="flex flex-col gap-2 text-sm font-medium text-[var(--ink)]">
-      <span>
-        {label}
-        {required ? " *" : ""}
-      </span>
-      {textarea ? (
-        <textarea
-          id={id}
-          name={id}
-          rows={4}
-          placeholder={placeholder}
-          maxLength={1000}
-          className={baseClassName}
-        />
-      ) : (
-        <input
-          id={id}
-          name={id}
-          type={type}
-          autoComplete={autoComplete}
-          placeholder={placeholder}
-          required={required}
-          maxLength={maxLength}
-          className={baseClassName}
-        />
-      )}
-    </label>
-  );
-}
-
-function CategoryField() {
-  const baseClassName =
-    "w-full rounded-xl border border-[var(--line)] bg-white/85 px-4 py-3 text-sm text-[var(--ink)] outline-none transition focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand-soft)]";
-
-  return (
-    <label className="flex flex-col gap-2 text-sm font-medium text-[var(--ink)]">
-      <span>Category *</span>
-      <select
-        id="category"
-        name="category"
-        defaultValue="Others"
-        required
-        className={baseClassName}
-      >
-        {CONTACT_CATEGORIES.map((category) => (
-          <option key={category} value={category}>
-            {category}
-          </option>
-        ))}
-      </select>
-    </label>
-  );
-}
-
 export function ContactForm() {
   const [state, formAction] = useActionState(saveContact, initialState);
-  const formRef = useRef<HTMLFormElement>(null);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [stepError, setStepError] = useState("");
+  const [values, setValues] = useState<ContactValues>(initialValues);
 
-  useEffect(() => {
-    if (state.status === "success") {
-      formRef.current?.reset();
+  const steps = useMemo(
+    () => [
+      {
+        title: "Contact name",
+        description: "Who are you speaking with?",
+        render: (
+          <input
+            value={values.name}
+            onChange={(event) => {
+              setValues((prev) => ({ ...prev, name: event.target.value }));
+              setStepError("");
+            }}
+            autoComplete="name"
+            placeholder="e.g. Priya Sharma"
+            className="w-full rounded-xl border border-[var(--line)] bg-white px-4 py-3 text-sm text-[var(--ink)] outline-none transition focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand-soft)]"
+          />
+        ),
+      },
+      {
+        title: "Organization",
+        description: "Add the company or brand name.",
+        render: (
+          <input
+            value={values.organization}
+            onChange={(event) => {
+              setValues((prev) => ({ ...prev, organization: event.target.value }));
+              setStepError("");
+            }}
+            placeholder="e.g. Brightline Media"
+            className="w-full rounded-xl border border-[var(--line)] bg-white px-4 py-3 text-sm text-[var(--ink)] outline-none transition focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand-soft)]"
+          />
+        ),
+      },
+      {
+        title: "Category",
+        description: "Select the contact category.",
+        render: (
+          <select
+            value={values.category}
+            onChange={(event) => {
+              setValues((prev) => ({
+                ...prev,
+                category: event.target.value as ContactCategory,
+              }));
+              setStepError("");
+            }}
+            className="w-full rounded-xl border border-[var(--line)] bg-white px-4 py-3 text-sm text-[var(--ink)] outline-none transition focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand-soft)]"
+          >
+            {CONTACT_CATEGORIES.map((category) => (
+              <option key={category} value={category}>
+                {category}
+              </option>
+            ))}
+          </select>
+        ),
+      },
+      {
+        title: "Phone number",
+        description: "Add the best number to call.",
+        render: (
+          <input
+            value={values.phoneNumber}
+            onChange={(event) => {
+              setValues((prev) => ({ ...prev, phoneNumber: event.target.value }));
+              setStepError("");
+            }}
+            autoComplete="tel"
+            placeholder="+91 98765 43210"
+            className="w-full rounded-xl border border-[var(--line)] bg-white px-4 py-3 text-sm text-[var(--ink)] outline-none transition focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand-soft)]"
+          />
+        ),
+      },
+      {
+        title: "Designation",
+        description: "What is their role?",
+        render: (
+          <input
+            value={values.designation}
+            onChange={(event) => {
+              setValues((prev) => ({ ...prev, designation: event.target.value }));
+              setStepError("");
+            }}
+            placeholder="e.g. Marketing Manager"
+            className="w-full rounded-xl border border-[var(--line)] bg-white px-4 py-3 text-sm text-[var(--ink)] outline-none transition focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand-soft)]"
+          />
+        ),
+      },
+      {
+        title: "Address / Location",
+        description: "Add city or area for follow-up planning.",
+        render: (
+          <input
+            value={values.address}
+            onChange={(event) => {
+              setValues((prev) => ({ ...prev, address: event.target.value }));
+              setStepError("");
+            }}
+            placeholder="e.g. Jubilee Hills, Hyderabad"
+            className="w-full rounded-xl border border-[var(--line)] bg-white px-4 py-3 text-sm text-[var(--ink)] outline-none transition focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand-soft)]"
+          />
+        ),
+      },
+      {
+        title: "Comments",
+        description: "Capture discussion context or next steps.",
+        render: (
+          <textarea
+            value={values.comments}
+            onChange={(event) => {
+              setValues((prev) => ({ ...prev, comments: event.target.value }));
+              setStepError("");
+            }}
+            rows={4}
+            placeholder="Any lead context, follow-up notes, meeting details..."
+            className="w-full rounded-xl border border-[var(--line)] bg-white px-4 py-3 text-sm text-[var(--ink)] outline-none transition focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand-soft)]"
+          />
+        ),
+      },
+    ],
+    [values]
+  );
+
+  const totalSteps = steps.length;
+
+  function validateStep(stepIndex: number) {
+    if (stepIndex === 0) {
+      if (!values.name.trim()) {
+        return "Name is required.";
+      }
+      if (values.name.trim().length > MAX_FIELD_LENGTH) {
+        return "Name is too long.";
+      }
     }
-  }, [state.status]);
+
+    if (stepIndex === 1 && values.organization.trim().length > MAX_FIELD_LENGTH) {
+      return "Organization is too long.";
+    }
+
+    if (stepIndex === 3) {
+      if (!values.phoneNumber.trim()) {
+        return "Phone number is required.";
+      }
+      if (!isValidPhoneNumber(values.phoneNumber)) {
+        return "Please enter a valid phone number.";
+      }
+    }
+
+    if (stepIndex === 4 && values.designation.trim().length > MAX_FIELD_LENGTH) {
+      return "Designation is too long.";
+    }
+
+    if (stepIndex === 5 && values.address.trim().length > MAX_FIELD_LENGTH) {
+      return "Address/Location is too long.";
+    }
+
+    if (stepIndex === 6 && values.comments.trim().length > MAX_COMMENT_LENGTH) {
+      return "Comments can be up to 1000 characters.";
+    }
+
+    return "";
+  }
+
+  function handleNext() {
+    const validationError = validateStep(currentStep);
+    if (validationError) {
+      setStepError(validationError);
+      return;
+    }
+
+    setStepError("");
+    setCurrentStep((prev) => Math.min(prev + 1, totalSteps - 1));
+  }
+
+  function handleBack() {
+    setStepError("");
+    setCurrentStep((prev) => Math.max(prev - 1, 0));
+  }
+
+  const progressPercentage = ((currentStep + 1) / totalSteps) * 100;
 
   return (
     <form
-      ref={formRef}
       action={formAction}
       className="space-y-5 rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-5 shadow-lg shadow-[var(--shadow)] sm:p-7"
     >
-      <div className="grid gap-4 sm:grid-cols-2">
-        <ContactField
-          id="name"
-          label="Name"
-          placeholder="e.g. Priya Sharma"
-          required
-          autoComplete="name"
-        />
-        <ContactField
-          id="organization"
-          label="Organization"
-          placeholder="e.g. Brightline Media"
-        />
-        <ContactField
-          id="phoneNumber"
-          label="Phone Number"
-          placeholder="+91 98765 43210"
-          type="tel"
-          autoComplete="tel"
-          required
-        />
-        <CategoryField />
-        <ContactField
-          id="designation"
-          label="Designation"
-          placeholder="e.g. Marketing Manager"
-        />
+      <input type="hidden" name="name" value={values.name} />
+      <input type="hidden" name="organization" value={values.organization} />
+      <input type="hidden" name="category" value={values.category} />
+      <input type="hidden" name="phoneNumber" value={values.phoneNumber} />
+      <input type="hidden" name="designation" value={values.designation} />
+      <input type="hidden" name="address" value={values.address} />
+      <input type="hidden" name="comments" value={values.comments} />
+
+      <div className="space-y-2">
+        <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.08em] text-[var(--muted)]">
+          <span>
+            Step {currentStep + 1} of {totalSteps}
+          </span>
+          <span>{Math.round(progressPercentage)}%</span>
+        </div>
+        <div className="h-2 w-full overflow-hidden rounded-full bg-[var(--surface-muted)]">
+          <div
+            className="h-full rounded-full bg-[var(--brand)] transition-all duration-200"
+            style={{ width: `${progressPercentage}%` }}
+          />
+        </div>
       </div>
 
-      <ContactField
-        id="address"
-        label="Address / Location"
-        placeholder="e.g. Jubilee Hills, Hyderabad"
-      />
-      <ContactField
-        id="comments"
-        label="Comments"
-        placeholder="Any lead context, follow-up notes, meeting details..."
-        textarea
-      />
+      <div className="space-y-4">
+        <div>
+          <h3 className="text-lg font-semibold text-[var(--ink)]">
+            {steps[currentStep].title}
+          </h3>
+          <p className="mt-1 text-sm text-[var(--muted)]">
+            {steps[currentStep].description}
+          </p>
+        </div>
+        {steps[currentStep].render}
+      </div>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <SubmitButton />
+      {stepError ? <p className="text-sm text-rose-700">{stepError}</p> : null}
+
+      <div className="flex flex-wrap items-center gap-3">
+        {currentStep > 0 ? (
+          <button
+            type="button"
+            onClick={handleBack}
+            className="rounded-xl border border-[var(--line)] bg-white px-5 py-3 text-sm font-semibold text-[var(--ink)] transition hover:border-[var(--accent)]"
+          >
+            Back
+          </button>
+        ) : null}
+
+        {currentStep < totalSteps - 1 ? (
+          <button
+            type="button"
+            onClick={handleNext}
+            className="rounded-xl bg-[var(--brand-strong)] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[var(--brand)]"
+          >
+            Next
+          </button>
+        ) : (
+          <SaveButton />
+        )}
+
         {state.status !== "idle" ? (
           <p
             className={`text-sm ${
-              state.status === "success"
-                ? "text-emerald-700"
-                : "text-rose-700"
+              state.status === "success" ? "text-emerald-700" : "text-rose-700"
             }`}
           >
             {state.message}

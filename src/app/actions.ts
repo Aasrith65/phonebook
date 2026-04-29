@@ -12,6 +12,11 @@ export type SaveContactState = {
   message: string;
 };
 
+export type DeleteContactState = {
+  status: "idle" | "success" | "error";
+  message: string;
+};
+
 const MAX_FIELD_LENGTH = 250;
 const MAX_COMMENT_LENGTH = 1000;
 
@@ -102,5 +107,37 @@ export async function saveContact(
   return {
     status: "success",
     message: "Contact saved successfully.",
+  };
+}
+
+export async function deleteContact(
+  _previousState: DeleteContactState,
+  formData: FormData
+): Promise<DeleteContactState> {
+  const contactId = getTrimmedValue(formData, "contactId");
+
+  if (!contactId) {
+    return {
+      status: "error",
+      message: "Contact identifier is missing.",
+    };
+  }
+
+  try {
+    await prisma.contact.delete({
+      where: { id: contactId },
+    });
+  } catch {
+    return {
+      status: "error",
+      message: "Unable to delete contact right now. Please try again.",
+    };
+  }
+
+  revalidatePath("/phonebook");
+
+  return {
+    status: "success",
+    message: "Contact deleted.",
   };
 }

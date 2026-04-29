@@ -1,5 +1,9 @@
 import type { Contact, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import {
+  ContactCallButton,
+  ContactDeleteButton,
+} from "@/components/contact-actions";
 
 export const dynamic = "force-dynamic";
 export const metadata = {
@@ -144,9 +148,12 @@ export default async function PhonebookPage({
                     </h3>
                     <p className="text-sm text-[var(--muted)]">{contact.name}</p>
                   </div>
-                  <span className="inline-flex rounded-full bg-[var(--brand-soft)] px-2.5 py-1 text-[11px] font-semibold text-[var(--brand-strong)]">
-                    {contact.category}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex rounded-full bg-[var(--brand-soft)] px-2.5 py-1 text-[11px] font-semibold text-[var(--brand-strong)]">
+                      {contact.category}
+                    </span>
+                    <ContactDeleteButton contactId={contact.id} align="right" />
+                  </div>
                 </div>
 
                 <div className="mt-3 space-y-1.5 text-sm text-[var(--ink)]">
@@ -173,6 +180,9 @@ export default async function PhonebookPage({
                   </p>
                 </div>
 
+                <div className="mt-3">
+                  <ContactCallButton phoneNumber={contact.phoneNumber} />
+                </div>
                 <p className="mt-3 text-xs font-semibold text-[var(--muted)]">
                   Added: {formatDate(contact.createdAt)}
                 </p>
@@ -200,7 +210,13 @@ export default async function PhonebookPage({
                     Comments
                   </th>
                   <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--muted)]">
+                    Call
+                  </th>
+                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--muted)]">
                     Added On
+                  </th>
+                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--muted)]">
+                    Delete
                   </th>
                 </tr>
               </thead>
@@ -236,8 +252,17 @@ export default async function PhonebookPage({
                         {contact.comments || "-"}
                       </span>
                     </td>
+                    <td className="px-4 py-3 align-middle">
+                      <ContactCallButton
+                        phoneNumber={contact.phoneNumber}
+                        className="w-full max-w-[84px]"
+                      />
+                    </td>
                     <td className="px-4 py-3 text-xs font-semibold text-[var(--muted)]">
                       {formatDate(contact.createdAt)}
+                    </td>
+                    <td className="px-4 py-3 align-middle">
+                      <ContactDeleteButton contactId={contact.id} align="center" />
                     </td>
                   </tr>
                 ))}
