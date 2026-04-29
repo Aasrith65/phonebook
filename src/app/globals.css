@@ -1,0 +1,36 @@
+@import "tailwindcss";
+
+:root {
+  --ink: #142235;
+  --muted: #5b6a7d;
+  --brand: #0b5cab;
+  --brand-strong: #08458a;
+  --brand-soft: #e7f0fb;
+  --accent: #0b5cab;
+  --accent-strong: #08458a;
+  --accent-soft: #e7f0fb;
+  --surface: #ffffff;
+  --surface-muted: #f7faff;
+  --line: #d7e1ec;
+  --shadow: rgba(15, 23, 42, 0.08);
+}
+
+@theme inline {
+  --color-background: var(--surface);
+  --color-foreground: var(--ink);
+  --font-sans: var(--font-manrope);
+  --font-mono: var(--font-ibm-plex-mono);
+  --font-heading: var(--font-manrope);
+}
+
+body {
+  min-height: 100dvh;
+  color: var(--ink);
+  background-color: #f2f5fa;
+  background-image: linear-gradient(180deg, #f7f9fc 0%, #eef3f9 100%);
+  font-family: var(--font-manrope), "Segoe UI", sans-serif;
+}
+
+.font-heading {
+  font-family: var(--font-manrope), "Segoe UI", sans-serif;
+}
